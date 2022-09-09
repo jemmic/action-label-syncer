@@ -3,6 +3,7 @@ FROM golang:1.13 AS build
 WORKDIR /go/src/app
 COPY . /go/src/app
 RUN go get -d -v ./...
+RUN go test ./... -test.v
 RUN go build -o /go/bin/app cmd/action-label-syncer/main.go
 
 FROM gcr.io/distroless/base
