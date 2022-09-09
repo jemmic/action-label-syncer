@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -65,6 +66,10 @@ func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials) ([]Lab
 	return processLabelsInternal(map[string]bool{}, labels, httpAuth)
 }
 
+var client = &http.Client{
+	Timeout: time.Second * 10,
+}
+
 func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
 	if result, ok := visited[ref.Url]; result || ok {
 		return nil, errors.New("Cyclic reference encountered for file " + ref.Url)
@@ -77,7 +82,7 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 	if httpAuth.Username != "" && httpAuth.Password != "" {
 		request.SetBasicAuth(httpAuth.Username, httpAuth.Password)
 	}
-	response, err := http.DefaultClient.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
