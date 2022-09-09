@@ -91,6 +91,43 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
 ```
 
+## Download labels from URL
+
+It's possible to pull additional labels by referencing yaml files in the manifest:
+```yaml
+- name: bug
+  description: Something isn't working
+  color: d73a4a
+- ref:
+    url: "https://example.com/other-labels.yaml"
+```
+
+This also works recursively if the downloaded file contains further references.
+Processing fails if there should be cyclic references between the label files.
+
+It's possible to access files protected with basic auth:
+
+```yaml
+name: Sync labels
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - path/to/manifest/labels.yml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jemmic/action-label-syncer@v1
+        with:
+          httpAuthUsername: foo
+          httpAuthPassword: ${{ secrets.HTTP_AUTH_PASS }}
+```
+
+NB: When the httpAuth inputs are set, then the basic auth header will be sent for all HTTP requests.
+
 ## Project using action-label-syncer
 
 - [cloudalchemy/ansible-prometheus](https://github.com/cloudalchemy/ansible-prometheus)
