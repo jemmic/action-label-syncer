@@ -70,7 +70,14 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 		return nil, errors.New("Cyclic reference encountered for file " + ref.Url)
 	}
 	visited[ref.Url] = true
-	response, err := http.Get(ref.Url)
+	request, err := http.NewRequest("GET", ref.Url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if httpAuth.Username != "" && httpAuth.Password != "" {
+		request.SetBasicAuth(httpAuth.Username, httpAuth.Password)
+	}
+	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
