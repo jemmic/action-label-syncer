@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -103,7 +104,9 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 	var results []Label
 	for _, label := range labels {
 		if label.Ref == nil {
-			results = append(results, label.Label)
+			l := label.Label
+			l.Color = strings.TrimPrefix(l.Color, "#")
+			results = append(results, l)
 			continue
 		}
 		downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth)
