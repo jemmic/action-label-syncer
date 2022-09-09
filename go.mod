@@ -1,4 +1,4 @@
-module github.com/micnncim/action-label-syncer
+module github.com/jemmic/action-label-syncer
 
 go 1.13
 

@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/micnncim/action-label-syncer/pkg/github"
+	"github.com/jemmic/action-label-syncer/pkg/github"
 	"go.uber.org/multierr"
 )
 
@@ -34,7 +34,12 @@ func main() {
 
 func run(ctx context.Context) error {
 	manifest := os.Getenv("INPUT_MANIFEST")
-	labels, err := github.FromManifestToLabels(manifest)
+	basicAuthUsername := os.Getenv("INPUT_HTTPAUTHUSERNAME")
+	basicAuthPassword := os.Getenv("INPUT_HTTPAUTHPASSWORD")
+	labels, err := github.FromManifestToLabels(manifest, github.HttpBasicAuthCredentials{
+		Username: basicAuthUsername,
+		Password: basicAuthPassword,
+	})
 	if err != nil {
 		return fmt.Errorf("unable to load manifest: %w", err)
 	}

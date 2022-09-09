@@ -16,8 +16,10 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -36,14 +38,69 @@ type Label struct {
 	Color       string `yaml:"color"`
 }
 
-func FromManifestToLabels(path string) ([]Label, error) {
+type reference struct {
+	Url string `yaml:"url"`
+}
+
+type HttpBasicAuthCredentials struct {
+	Username string
+	Password string
+}
+
+type labelWithReferences struct {
+	Label
+	Ref *reference `yaml:"ref"`
+}
+
+func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var labels []Label
+	var labels []labelWithReferences
 	err = yaml.Unmarshal(buf, &labels)
-	return labels, err
+	if err != nil {
+		return nil, err
+	}
+	return processLabelsInternal(map[string]bool{}, labels, httpAuth)
+}
+
+func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
+	if result, ok := visited[ref.Url]; result || ok {
+		return nil, errors.New("Cyclic reference encountered for file " + ref.Url)
+	}
+	visited[ref.Url] = true
+	response, err := http.Get(ref.Url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	var labels []labelWithReferences
+	err = yaml.Unmarshal(body, &labels)
+	if err != nil {
+		return nil, err
+	}
+	return processLabelsInternal(visited, labels, httpAuth)
+}
+
+func processLabelsInternal(visited map[string]bool, labels []labelWithReferences, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
+	var results []Label
+	for _, label := range labels {
+		if label.Ref == nil {
+			results = append(results, label.Label)
+			continue
+		}
+		downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, downloadedLabels...)
+	}
+	return results, nil
 }
 
 func NewClient(token string) *Client {

@@ -16,6 +16,12 @@ inputs:
     description: "Remove unmanaged labels from repository"
     required: false
     default: true
+  httpAuthUsername:
+    description: "A HTTP basic auth username to be used when downloading referenced label files"
+    required: false
+  httpAuthPassword:
+    description: "A HTTP basic auth password to be used when downloading referenced label files"
+    required: false
 runs:
   using: "docker"
   image: "Dockerfile"
