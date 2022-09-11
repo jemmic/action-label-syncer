@@ -93,6 +93,17 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
 ```
 
+## Use dry-run mode
+
+It's possible to make the action only print any actions that would be taken without actually performing them by setting the `dryRun: true` flag in the workflow.
+
+```yaml
+...
+      - uses: jemmic/action-label-syncer@v1
+        with:
+          dryRun: true
+```
+
 ## Download labels from URL
 
 It's possible to pull additional labels by referencing yaml files in the manifest:

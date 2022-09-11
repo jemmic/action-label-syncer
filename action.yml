@@ -22,6 +22,10 @@ inputs:
   httpAuthPassword:
     description: "A HTTP basic auth password to be used when downloading referenced label files"
     required: false
+  dryRun:
+    description: "Print what would be done, but do nothing"
+    required: false
+    default: false
 runs:
   using: "docker"
   image: "Dockerfile"
