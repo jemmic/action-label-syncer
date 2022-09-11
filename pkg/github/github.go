@@ -105,6 +105,13 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 	for _, label := range labels {
 		if label.Ref == nil {
 			l := label.Label
+			// Data checks and normalization.
+			if strings.Contains(l.Name, "?") {
+				return nil, fmt.Errorf("Label name cannot contain question marks: \"%s\"", l.Name)
+			}
+			if len(l.Description) > 100 {
+				return nil, fmt.Errorf("Description of \"%s\" exceeds 100 characters", l.Name)
+			}
 			l.Color = strings.TrimPrefix(l.Color, "#")
 			results = append(results, l)
 			continue
