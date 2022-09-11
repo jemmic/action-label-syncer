@@ -51,7 +51,7 @@ type HttpBasicAuthCredentials struct {
 
 type labelWithReferences struct {
 	Label `yaml:",inline"`
-	Ref   *reference `yaml:"ref"`
+	Ref   *reference `yaml:"ref"` // If "ref" is present, all other fields are ignored.
 }
 
 func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
