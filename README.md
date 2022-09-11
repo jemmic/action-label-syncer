@@ -141,6 +141,39 @@ jobs:
 
 NB: When the httpAuth inputs are set, then the basic auth header will be sent for all HTTP requests.
 
+### Renaming labels
+
+If you want to rename a label, you can set an `alias` in the manifest.
+For example, if you want to rename the label `bug` to `Type: bug`, you
+would use a manifest like this:
+
+```yaml
+- name: Type: bug
+  alias: bug
+  description: Something isn't working
+  color: d73a4a
+```
+
+Renaming labels makes it easier to adopt a new taxonomy if you have
+issues and pull requests using the old label names. Since you're
+renaming labels rather than deleting and creating new ones, existing
+pull requests and issues will keep their labels, but will adopt the
+new name.
+
+You can also set multiple aliases, which can be useful when reusing a
+configuration across multiple repositories, each of which may have a different
+existing label.  For example:
+
+```yaml
+- name: Type: bug
+  aliases:
+    - bug
+    - defect
+    - "Seriously, what was I thinking?"
+  description: Something isn't working
+  color: d73a4a
+```
+
 ## Project using action-label-syncer
 
 - [cloudalchemy/ansible-prometheus](https://github.com/cloudalchemy/ansible-prometheus)

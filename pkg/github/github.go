@@ -35,9 +35,11 @@ type Client struct {
 }
 
 type Label struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-	Color       string `yaml:"color"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Color       string   `yaml:"color"`
+	Alias       string   `yaml:"alias"`
+	Aliases     []string `yaml:"aliases"`
 }
 
 type reference struct {
@@ -113,6 +115,9 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 				return nil, fmt.Errorf("Description of \"%s\" exceeds 100 characters", l.Name)
 			}
 			l.Color = strings.TrimPrefix(l.Color, "#")
+			if l.Alias != "" {
+				l.Aliases = append(l.Aliases, l.Alias)
+			}
 			results = append(results, l)
 			continue
 		}
@@ -142,8 +147,12 @@ func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []La
 	}
 
 	labelMap := make(map[string]Label)
+	aliasMap := make(map[string]Label)
 	for _, l := range labels {
 		labelMap[l.Name] = l
+		for _, alias := range l.Aliases {
+			aliasMap[alias] = l
+		}
 	}
 
 	currentLabels, err := c.getLabels(ctx, owner, repo)
@@ -162,8 +171,9 @@ func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []La
 		for _, currentLabel := range currentLabels {
 			currentLabel := currentLabel
 			eg.Go(func() error {
-				_, ok := labelMap[currentLabel.Name]
-				if ok {
+				_, nameOk := labelMap[currentLabel.Name]
+				_, aliasOk := aliasMap[currentLabel.Name]
+				if nameOk || aliasOk {
 					return nil
 				}
 				return c.deleteLabel(ctx, owner, repo, currentLabel.Name, dryRun)
@@ -181,10 +191,18 @@ func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []La
 		eg.Go(func() error {
 			currentLabel, ok := currentLabelMap[l.Name]
 			if !ok {
+				for _, alias := range l.Aliases {
+					currentLabel, ok = currentLabelMap[alias]
+					if ok {
+						break
+					}
+				}
+			}
+			if !ok {
 				return c.createLabel(ctx, owner, repo, l, dryRun)
 			}
-			if currentLabel.Description != l.Description || currentLabel.Color != l.Color {
-				return c.updateLabel(ctx, owner, repo, l, dryRun)
+			if currentLabel.Description != l.Description || currentLabel.Color != l.Color || currentLabel.Name != l.Name {
+				return c.updateLabel(ctx, owner, repo, currentLabel.Name, l, dryRun)
 			}
 			fmt.Printf("label: %+v not changed on %s/%s\n", l, owner, repo)
 			return nil
@@ -233,17 +251,21 @@ func (c *Client) getLabels(ctx context.Context, owner, repo string) ([]Label, er
 	return labels, nil
 }
 
-func (c *Client) updateLabel(ctx context.Context, owner, repo string, label Label, dryRun bool) error {
+func (c *Client) updateLabel(ctx context.Context, owner, repo, labelName string, label Label, dryRun bool) error {
 	l := &github.Label{
 		Name:        &label.Name,
 		Description: &label.Description,
 		Color:       &label.Color,
 	}
-	fmt.Printf("label update %+v on: %s/%s\n", label, owner, repo)
+	if labelName != label.Name {
+		fmt.Printf("label rename %s => %+v on: %s/%s\n", labelName, label, owner, repo)
+	} else {
+		fmt.Printf("label update %+v on: %s/%s\n", label, owner, repo)
+	}
 	if dryRun {
 		return nil
 	}
-	_, _, err := c.githubClient.Issues.EditLabel(ctx, owner, repo, label.Name, l)
+	_, _, err := c.githubClient.Issues.EditLabel(ctx, owner, repo, labelName, l)
 	return err
 }
 
