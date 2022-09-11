@@ -204,7 +204,7 @@ func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []La
 			if currentLabel.Description != l.Description || currentLabel.Color != l.Color || currentLabel.Name != l.Name {
 				return c.updateLabel(ctx, owner, repo, currentLabel.Name, l, dryRun)
 			}
-			fmt.Printf("label: %+v not changed on %s/%s\n", l, owner, repo)
+			fmt.Printf("label not changed: %+v on %s/%s\n", l, owner, repo)
 			return nil
 		})
 	}
