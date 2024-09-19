@@ -121,11 +121,11 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 			results = append(results, l)
 			continue
 		}
-		downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth, verbose)
-		if err != nil {
+		if downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth, verbose); err != nil {
 			return nil, err
+		} else {
+			results = append(results, downloadedLabels...)
 		}
-		results = append(results, downloadedLabels...)
 	}
 	return results, nil
 }
