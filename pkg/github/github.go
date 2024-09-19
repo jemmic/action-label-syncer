@@ -142,10 +142,14 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 
 func processLabelsInternal(visited map[string]bool, labels []labelWithReferences, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
 	if verbose {
+		vLabels, err := yaml.Marshal(labels)
+		if err != nil {
+			return nil, err
+		}
 		fmt.Printf(
 			"processLabelsInternal called with arguments: (visited=%v, labels=%v, verbose=%v)\n",
 			visited,
-			labels,
+			string(vLabels),
 			verbose,
 		)
 	}
