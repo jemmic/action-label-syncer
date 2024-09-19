@@ -129,6 +129,9 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 	if err != nil {
 		return nil, err
 	}
+	if verbose {
+		fmt.Printf("downloaded %s\n", string(body))
+	}
 	var labels []labelWithReferences
 	err = yaml.Unmarshal(body, &labels)
 	if err != nil {
