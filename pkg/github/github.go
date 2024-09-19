@@ -17,6 +17,7 @@ package github
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -62,13 +63,17 @@ func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials, verbos
 	if verbose {
 		var vAuth HttpBasicAuthCredentials
 		vAuth.Username = httpAuth.Username
-		if vAuth.Password != "" {
-			vAuth.Password = fmt.Sprintf("%x", sha256.Sum256([]byte(vAuth.Password)))
+		if httpAuth.Password != "" {
+			vAuth.Password = fmt.Sprintf("(sha256) %x", sha256.Sum256([]byte(httpAuth.Password)))
+		}
+		sAuth, err := json.Marshal(vAuth)
+		if err != nil {
+			return nil, err
 		}
 		fmt.Printf(
 			"FromManifestToLabels called with arguments: (path=%s, httpAuth=%v, verbose=%v)\n",
 			path,
-			vAuth,
+			string(sAuth),
 			verbose,
 		)
 	}
