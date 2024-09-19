@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -125,7 +126,12 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func(body io.ReadCloser) {
+		err := body.Close()
+		if err != nil {
+			fmt.Printf("cannot close body %v\n", err)
+		}
+	}(response.Body)
 	var body []byte
 	body, err = ioutil.ReadAll(response.Body)
 	if err != nil {
