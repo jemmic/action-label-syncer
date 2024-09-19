@@ -16,6 +16,7 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -57,6 +58,19 @@ type labelWithReferences struct {
 }
 
 func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
+	if verbose {
+		var vAuth HttpBasicAuthCredentials
+		vAuth.Username = httpAuth.Username
+		if vAuth.Password != "" {
+			vAuth.Password = fmt.Sprintf("%x", sha256.Sum256([]byte(vAuth.Password)))
+		}
+		fmt.Printf(
+			"FromManifestToLabels called with arguments: (path=%s, httpAuth=%v, verbose=%v)\n",
+			path,
+			vAuth,
+			verbose,
+		)
+	}
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -74,15 +88,36 @@ var client = &http.Client{
 }
 
 func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
+	if verbose {
+		fmt.Printf(
+			"downloadLabels called with arguments: (visited=%v, ref=%v, httpAuth=*, verbose=%v)\n",
+			visited,
+			ref,
+			verbose,
+		)
+	}
 	if result, ok := visited[ref.Url]; result || ok {
 		return nil, errors.New("Cyclic reference encountered for file " + ref.Url)
 	}
 	visited[ref.Url] = true
+	if verbose {
+		fmt.Printf(
+			"downloading labels from %s\n",
+			ref.Url,
+		)
+	}
 	request, err := http.NewRequest("GET", ref.Url, nil)
 	if err != nil {
 		return nil, err
 	}
 	if httpAuth.Username != "" && httpAuth.Password != "" {
+		if verbose {
+			fmt.Printf(
+				"setting basic auth for call to %s with username %s\n",
+				ref.Url,
+				httpAuth.Username,
+			)
+		}
 		request.SetBasicAuth(httpAuth.Username, httpAuth.Password)
 	}
 	response, err := client.Do(request)
@@ -103,6 +138,14 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 }
 
 func processLabelsInternal(visited map[string]bool, labels []labelWithReferences, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
+	if verbose {
+		fmt.Printf(
+			"processLabelsInternal called with arguments: (visited=%v, labels=%v, verbose=%v)\n",
+			visited,
+			labels,
+			verbose,
+		)
+	}
 	var results []Label
 	for _, label := range labels {
 		if label.Ref == nil {
@@ -122,6 +165,9 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 			continue
 		}
 		if downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth, verbose); err != nil {
+			if verbose {
+				fmt.Printf("Error downloading labels: %s\n", err)
+			}
 			return nil, err
 		} else {
 			results = append(results, downloadedLabels...)
