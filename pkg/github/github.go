@@ -126,6 +126,9 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 	if err != nil {
 		return nil, err
 	}
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("could not download from %s, received status code %v", ref.Url, response.StatusCode)
+	}
 	defer func(body io.ReadCloser) {
 		err := body.Close()
 		if err != nil {
