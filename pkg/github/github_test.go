@@ -9,7 +9,7 @@ import (
 )
 
 func TestFromManifestToLabels(t *testing.T) {
-	labels, err := FromManifestToLabels(filepath.Join("testdata", "labels.yaml"), HttpBasicAuthCredentials{})
+	labels, err := FromManifestToLabels(filepath.Join("testdata", "labels.yaml"), HttpBasicAuthCredentials{}, true)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, labels, []Label{
 		{

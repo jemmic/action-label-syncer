@@ -36,10 +36,22 @@ func run(ctx context.Context) error {
 	manifest := os.Getenv("INPUT_MANIFEST")
 	basicAuthUsername := os.Getenv("INPUT_HTTPAUTHUSERNAME")
 	basicAuthPassword := os.Getenv("INPUT_HTTPAUTHPASSWORD")
-	labels, err := github.FromManifestToLabels(manifest, github.HttpBasicAuthCredentials{
+	var labels []github.Label
+	var err error
+
+	verbose := false
+	verboseEnv := os.Getenv("INPUT_VERBOSE")
+	if verboseEnv != "" {
+		verbose, err = strconv.ParseBool(verboseEnv)
+		if err != nil {
+			return fmt.Errorf("unable to parse verbose: %w", err)
+		}
+	}
+
+	labels, err = github.FromManifestToLabels(manifest, github.HttpBasicAuthCredentials{
 		Username: basicAuthUsername,
 		Password: basicAuthPassword,
-	})
+	}, verbose)
 	if err != nil {
 		return fmt.Errorf("unable to load manifest: %w", err)
 	}
@@ -81,7 +93,7 @@ func run(ctx context.Context) error {
 		}
 		owner, repo := s[0], s[1]
 
-		if err = client.SyncLabels(ctx, owner, repo, labels, prune, dryRun); err != nil {
+		if err = client.SyncLabels(ctx, owner, repo, labels, prune, dryRun, verbose); err != nil {
 			err = multierr.Append(err, fmt.Errorf("unable to sync labels: %w", err))
 		}
 	}

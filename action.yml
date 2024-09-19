@@ -26,6 +26,10 @@ inputs:
     description: "Print what would be done, but do nothing"
     required: false
     default: false
+  verbose:
+    description: "Use verbose logging"
+    required: false
+    default: true
 runs:
   using: "docker"
   image: "Dockerfile"

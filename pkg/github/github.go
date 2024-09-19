@@ -56,7 +56,7 @@ type labelWithReferences struct {
 	Ref   *reference `yaml:"ref"` // If "ref" is present, all other fields are ignored.
 }
 
-func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
+func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -66,14 +66,14 @@ func FromManifestToLabels(path string, httpAuth HttpBasicAuthCredentials) ([]Lab
 	if err != nil {
 		return nil, err
 	}
-	return processLabelsInternal(map[string]bool{}, labels, httpAuth)
+	return processLabelsInternal(map[string]bool{}, labels, httpAuth, verbose)
 }
 
 var client = &http.Client{
 	Timeout: time.Second * 10,
 }
 
-func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
+func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
 	if result, ok := visited[ref.Url]; result || ok {
 		return nil, errors.New("Cyclic reference encountered for file " + ref.Url)
 	}
@@ -99,10 +99,10 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 	if err != nil {
 		return nil, err
 	}
-	return processLabelsInternal(visited, labels, httpAuth)
+	return processLabelsInternal(visited, labels, httpAuth, verbose)
 }
 
-func processLabelsInternal(visited map[string]bool, labels []labelWithReferences, httpAuth HttpBasicAuthCredentials) ([]Label, error) {
+func processLabelsInternal(visited map[string]bool, labels []labelWithReferences, httpAuth HttpBasicAuthCredentials, verbose bool) ([]Label, error) {
 	var results []Label
 	for _, label := range labels {
 		if label.Ref == nil {
@@ -121,7 +121,7 @@ func processLabelsInternal(visited map[string]bool, labels []labelWithReferences
 			results = append(results, l)
 			continue
 		}
-		downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth)
+		downloadedLabels, err := downloadLabels(visited, *label.Ref, httpAuth, verbose)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +141,18 @@ func NewClient(token string) *Client {
 	}
 }
 
-func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []Label, prune bool, dryRun bool) error {
+func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []Label, prune bool, dryRun bool, verbose bool) error {
+	if verbose {
+		fmt.Printf(
+			"SyncLabels called with arguments: (owner=%s, repo=%s, labels=%v, prune=%v, dryRun=%v, verbose=%v)\n",
+			owner,
+			repo,
+			labels,
+			prune,
+			dryRun,
+			verbose,
+		)
+	}
 	if dryRun {
 		fmt.Printf("Dry run! No actual changes will be made.\n")
 	}
@@ -156,6 +167,9 @@ func (c *Client) SyncLabels(ctx context.Context, owner, repo string, labels []La
 	}
 
 	currentLabels, err := c.getLabels(ctx, owner, repo)
+	if verbose {
+		fmt.Printf("Current labels in repo: %v\n", currentLabels)
+	}
 	if err != nil {
 		return err
 	}
