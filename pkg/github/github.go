@@ -120,12 +120,14 @@ func downloadLabels(visited map[string]bool, ref reference, httpAuth HttpBasicAu
 		}
 		request.SetBasicAuth(httpAuth.Username, httpAuth.Password)
 	}
-	response, err := client.Do(request)
+	var response *http.Response
+	response, err = client.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	var body []byte
+	body, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
